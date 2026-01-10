@@ -1,0 +1,7 @@
+__main__.py
+log.txt
+.vscode/
+wandb/
+__pycache__/
+handin.zip
+fix_ckpt.py
