@@ -109,7 +109,7 @@ Then run the shell script.
 ```
 
 Download the output file `handin.zip` from server and decompress it locally. Its
-orgainization should be like:
+orgainization should be:
 
 ```
 handin/
@@ -117,4 +117,4 @@ handin/
   └── testrl.pt
 ```
 
-Finally, submit `codes.zip` and `testrl.pt` to Botzone to test your bot :)
+Finally, submit `codes.zip` and `testrl.pt` to Botzone.
