@@ -1,4 +1,4 @@
-# Mahjong Bot with Supervised Pretraining and Distributed PPO
+# Mahjong Bot
 
 This repo contains implementation of supervised pretraining and distributed PPO applied to Chinese Standard Mahjong.
 
@@ -18,6 +18,32 @@ pip install -r requirements.txt
 ```
 
 Note that you may need to manually install [MahjongGB](https://github.com/ailab-pku/PyMahjongGB).
+
+```bash
+pip install git+https://github.com/ailab-pku/PyMahjongGB.git
+```
+
+## Repo Organization
+
+```
+├── configs/                # yaml config files for SL and RL
+├── rl_ppo/                 
+│   ├── agents/             # PPO agent
+│   ├── envs/               # MahjongGB env
+│   ├── models/             # neural network arch (ResNet-34, etc.)
+│   ├── runners/            # actor and learner
+│   ├── utils/              # model pool and replay buffer
+│   └── __init__.py
+├── sl_pretrain/            
+│   ├── dataset/            # data processing
+│   ├── utils/              # utility functions for SL
+│   └── __init__.py
+├── __main__.py             # used for testing on Botzone
+├── pack.sh                 # automated packaging submission files
+├── requirements.txt        
+├── rl_train.py             # launch PPO fine-tuning
+└── sl_pretrain.py          # launch pretraining
+```
 
 ## Supervised Pretraining
 
