@@ -5,7 +5,7 @@ global:
     pretrained_model_path: '/home/data4T1/lpy/rl-proj/pretrain/log/20260111-121013/best.pt'
 
 actor:
-    num_actors: 150
+    num_actors: 200
     episodes_per_actor: 1000
     history_sample_prob: 0.2
     reward_scaling: 10.0
@@ -13,7 +13,7 @@ actor:
     lambda: 0.95
 
 learner:
-    model_pool_size: 2000
+    model_pool_size: 100
     learning_rate: 0.00001 # 1e-5
     epochs: 10
     batch_size: 8192
