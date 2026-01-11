@@ -13,23 +13,25 @@ class PPOAgent(MahjongGBAgent):
     '''
     Observation Shape: 40 * 4 * 9
     ---------------------------------------------------------------------------
-    [0]     SEAT_WIND       : 门风 (One-hot)
-    [1]     PREVALENT_WIND  : 圈风 (One-hot)
-    [2-5]   HAND            : 手牌 (4 channels: >=1, >=2, >=3, ==4)
+    [0]     SEAT_WIND           : 门风 (One-hot)
+    [1]     PREVALENT_WIND      : 圈风 (One-hot)
+    [2-5]   HAND                : 手牌 (4 channels: >=1, >=2, >=3, ==4)
     
-    [6-8]   PACKS_SELF      : 自己的副露 (Chi, Pon, Gang)
-    [9-11]  PACKS_DOWN      : 下家的副露 (Chi, Pon, Gang)
-    [12-14] PACKS_OPP       : 对家的副露 (Chi, Pon, Gang)
-    [15-17] PACKS_UP        : 上家的副露 (Chi, Pon, Gang)
+    [6-8]   PACKS_SELF          : 自己的副露 (Chi, Pon, Gang)
+    [9-11]  PACKS_DOWN          : 下家的副露 (Chi, Pon, Gang)
+    [12-14] PACKS_OPP           : 对家的副露 (Chi, Pon, Gang)
+    [15-17] PACKS_UP            : 上家的副露 (Chi, Pon, Gang)
     
-    [18-21]    HISTORY_SELF    : 自己的弃牌 (4 channels: >=1, >=2, >=3, ==4)
-    [22-25]    HISTORY_DOWN    : 下家的弃牌 (4 channels: >=1, >=2, >=3, ==4)
-    [26-29]    HISTORY_OPP     : 对家的弃牌 (4 channels: >=1, >=2, >=3, ==4)
-    [30-33]    HISTORY_UP      : 上家的弃牌 (4 channels: >=1, >=2, >=3, ==4)
+    [18-21]    HISTORY_SELF     : 自己的弃牌 (4 channels: >=1, >=2, >=3, ==4)
+    [22-25]    HISTORY_DOWN     : 下家的弃牌 (4 channels: >=1, >=2, >=3, ==4)
+    [26-29]    HISTORY_OPP      : 对家的弃牌 (4 channels: >=1, >=2, >=3, ==4)
+    [30-33]    HISTORY_UP       : 上家的弃牌 (4 channels: >=1, >=2, >=3, ==4)
     
-    [34-37]    WALL_COUNT      : 牌墙剩余比例 (4 channels: >=1, >=2, >=3, ==4)
-    [38]    SHANTEN         : 向听数 (Broadcast scalar)
-    [39]    LAST_PLAY       : 上一张被打出的牌
+    [34-37]    WALL_COUNT       : 牌墙剩余比例 (4 channels: >=1, >=2, >=3, ==4)
+    [38]    SHANTEN             : 向听数
+    [39]    LAST_PLAY           : 上一张被打出的牌
+    [40]    VISIBLE             : 当前可看到的牌
+    [44]    RECENT              : 最近两轮出的牌
     ---------------------------------------------------------------------------
 
     action_mask: 235
@@ -62,26 +64,26 @@ class PPOAgent(MahjongGBAgent):
         'BuGang' : 201
     }
     TILE_LIST = [
-        *('W%d'%(i+1) for i in range(9)),   # 万
-        *('T%d'%(i+1) for i in range(9)),   # 条
-        *('B%d'%(i+1) for i in range(9)),   # 筒
-        *('F%d'%(i+1) for i in range(4)),   # 风
-        *('J%d'%(i+1) for i in range(3))    # 中发白
+        *('W%d'%(i+1) for i in range(9)),
+        *('T%d'%(i+1) for i in range(9)),
+        *('B%d'%(i+1) for i in range(9)),
+        *('F%d'%(i+1) for i in range(4)),
+        *('J%d'%(i+1) for i in range(3))
     ]
     OFFSET_TILE = {c : i for i, c in enumerate(TILE_LIST)}
     
     def __init__(self, seatWind):
         self.seatWind = seatWind
-        self.packs = [[] for i in range(4)] # 玩家吃碰杠的牌
-        self.history = [[] for i in range(4)]   # 玩家的出牌历史
-        self.tileWall = [21] * 4    # 摸牌结束后，每个人面前有21张牌在牌墙中
+        self.packs = [[] for i in range(4)]
+        self.history = [[] for i in range(4)]
+        self.tileWall = [21] * 4
         self.shownTiles = defaultdict(int)
         self.wallLast = False
         self.isAboutKong = False
         self.last_played_tile = None
         self.recent_discards = []
         self.obs = np.zeros((self.OBS_SIZE, 36))
-        self.obs[self.OFFSET_OBS['SEAT_WIND']][self.OFFSET_TILE['F%d' % (self.seatWind + 1)]] = 1   # 设置门风
+        self.obs[self.OFFSET_OBS['SEAT_WIND']][self.OFFSET_TILE['F%d' % (self.seatWind + 1)]] = 1
     
     ''' 环境发给agent的消息格式
     Wind 0..3
@@ -106,38 +108,36 @@ class PPOAgent(MahjongGBAgent):
     '''
     def request2obs(self, request):
         t = request.split()
-        if t[0] == 'Wind':  # 圈风
-            # 设置圈风
+        if t[0] == 'Wind':
             self.prevalentWind = int(t[1])
             self.obs[self.OFFSET_OBS['PREVALENT_WIND']][self.OFFSET_TILE['F%d' % (self.prevalentWind + 1)]] = 1
             return
-        if t[0] == 'Deal':  # 系统发牌
+        if t[0] == 'Deal':
             self.hand = t[1:]
             self._hand_embedding_update()
             return
-        if t[0] == 'Huang': # 流局
-            self.valid = [] # 所有动作都失效
+        if t[0] == 'Huang':
+            self.valid = []
             return self._obs()
-        if t[0] == 'Draw': # 摸牌
-            # Available: Hu, Play, AnGang, BuGang
-            self.tileWall[0] -= 1   # 摸牌都是从自己面前的牌堆摸
+        if t[0] == 'Draw':
+            self.tileWall[0] -= 1
             self.wallLast = self.tileWall[1] == 0
-            tile = t[1] # 摸到的牌
-            self.valid = [] # 清空旧的合法动作列表，准备重新计算基于这张新牌的所有合法动作
+            tile = t[1]
+            self.valid = []
             self.last_played_tile = None
-            if self._check_mahjong(tile, isSelfDrawn = True, isAboutKong = self.isAboutKong):   # 如果胡了就是自摸
+            if self._check_mahjong(tile, isSelfDrawn = True, isAboutKong = self.isAboutKong):
                 self.valid.append(self.OFFSET_ACT['Hu'])
             self.isAboutKong = False
             self.hand.append(tile)
             self._hand_embedding_update()
             for tile in set(self.hand):
-                self.valid.append(self.OFFSET_ACT['Play'] + self.OFFSET_TILE[tile]) # 可打出的牌
-                if self.hand.count(tile) == 4 and not self.wallLast and self.tileWall[0] > 0:   # 摸到暗杠
+                self.valid.append(self.OFFSET_ACT['Play'] + self.OFFSET_TILE[tile])
+                if self.hand.count(tile) == 4 and not self.wallLast and self.tileWall[0] > 0:
                     self.valid.append(self.OFFSET_ACT['AnGang'] + self.OFFSET_TILE[tile])
             if not self.wallLast and self.tileWall[0] > 0:
                 for packType, tile, offer in self.packs[0]:
                     if packType == 'PENG' and tile in self.hand:
-                        self.valid.append(self.OFFSET_ACT['BuGang'] + self.OFFSET_TILE[tile])   # 摸到补杠
+                        self.valid.append(self.OFFSET_ACT['BuGang'] + self.OFFSET_TILE[tile])
             return self._obs()
         # Player N Invalid/Hu/Draw/Play/Chi/Peng/Gang/AnGang/BuGang XX
         p = (int(t[1]) + 4 - self.seatWind) % 4
@@ -169,7 +169,6 @@ class PPOAgent(MahjongGBAgent):
                 self.valid = []
                 if self._check_mahjong(self.curTile):
                     self.valid.append(self.OFFSET_ACT['Hu'])
-                    # TODO: 能胡就胡？
                 if not self.wallLast:
                     if self.hand.count(self.curTile) >= 2:
                         self.valid.append(self.OFFSET_ACT['Peng'] + self.OFFSET_TILE[self.curTile])
@@ -378,10 +377,10 @@ class PPOAgent(MahjongGBAgent):
         for tile in d:
             self.obs[self.OFFSET_OBS['HAND'] : self.OFFSET_OBS['HAND'] + d[tile], self.OFFSET_TILE[tile]] = 1
     
-    def _global_embedding_update(self): # 更新新加入的特征
+    def _global_embedding_update(self):
         self.obs[self.OFFSET_OBS['PACKS']:] = 0
     
-        # 更新 PACKS (Channel 6-17: Self, Down, Opp, Up x Chi, Peng, Gang)
+        # update packs (channel 6-17: Self, Down, Opp, Up x Chi, Peng, Gang)
         pack_type_map = {'CHI': 0, 'PENG': 1, 'GANG': 2}
         for i in range(4):
             base_idx = self.OFFSET_OBS['PACKS'] + (i * 3)
@@ -401,7 +400,7 @@ class PPOAgent(MahjongGBAgent):
                         if t_name in self.OFFSET_TILE:
                             self.obs[channel_idx][self.OFFSET_TILE[t_name]] = 1
 
-        # 更新 History (Channel 18-33: Self, Down, Opp, Up) 
+        # update history (channel 18-33: Self, Down, Opp, Up) 
         for i in range(4):
             base_idx = self.OFFSET_OBS['HISTORY'] + (i * 4)
             hist_counter = Counter(self.history[i])
@@ -413,19 +412,19 @@ class PPOAgent(MahjongGBAgent):
                     if count >= 3: self.obs[base_idx + 0 + 2][idx] = 1
                     if count >= 4: self.obs[base_idx + 0 + 3][idx] = 1
 
-        # 更新 Wall Count (Channel 34-37: Normalized)
+        # update wall count (channel 34-37: Normalized)
         for i in range(4):
             self.obs[self.OFFSET_OBS['WALL'] + i] = self.tileWall[i] / 21.0
 
-        # 更新 Shanten (Channel 38)
+        # update shanten (channel 38)
         shanten = self._get_shanten()
         self.obs[self.OFFSET_OBS['SHANTEN']] = max(0, shanten + 1) / 6.0
 
-        # 更新 LAST PLAY
+        # update last play
         if self.last_played_tile and self.last_played_tile in self.OFFSET_TILE:
             self.obs[self.OFFSET_OBS['LAST_PLAY']][self.OFFSET_TILE[self.last_played_tile]] = 1
 
-        # 更新 VISIBLE (已出现的牌)
+        # update visible tiles
         visible_counts = defaultdict(int)
         for i in range(4):
             for tile in self.history[i]:
@@ -454,7 +453,7 @@ class PPOAgent(MahjongGBAgent):
                 if count >= 3: self.obs[base_vis + 2][idx] = 1
                 if count >= 4: self.obs[base_vis + 3][idx] = 1
 
-        # 更新 RECENT_DISCARDS
+        # update recent discards
         base_rec = self.OFFSET_OBS['RECENT']
         self.obs[base_rec] = 0
         for tile in self.recent_discards:

@@ -2,7 +2,7 @@ global:
     replay_buffer_size: 50000
     replay_buffer_episode: 2000
     output_dir: /home/data4T1/lpy/rl-proj/rl/log/
-    pretrained_model_path: '/home/data4T1/lpy/rl-proj/pretrain/log/20260111-012526/best.pt'
+    pretrained_model_path: '/home/data4T1/lpy/rl-proj/pretrain/log/20260111-121013/best.pt'
 
 actor:
     num_actors: 150

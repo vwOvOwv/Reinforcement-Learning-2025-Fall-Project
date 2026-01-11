@@ -9,9 +9,6 @@ def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
     return layer
 
 class SEBlock(nn.Module):
-    """
-    Squeeze-and-Excitation Block
-    """
     def __init__(self, channel, reduction=16):
         super(SEBlock, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
