@@ -38,6 +38,9 @@ class Actor(Process):
         # create network model
         model = CNNModel()
         opponent_model = CNNModel()
+        baseline_state_dict = torch.load(self.config['pretrained_model_path'], 
+                                map_location='cpu',
+                                weights_only=True)
         
         # load initial model
         version = model_pool.get_latest_model()
@@ -64,13 +67,14 @@ class Actor(Process):
 
             is_league_game = False
             if np.random.rand() < self.history_sample_prob:
-                hist_version = model_pool.get_history_model()
-                hist_state_dict = model_pool.load_model(hist_version)
-                if hist_state_dict is not None:
-                    opponent_model.load_state_dict(hist_state_dict)
-                    is_league_game = True
-                else:   # failed to load historical model, fallback to self-play
-                    opponent_model.load_state_dict(model.state_dict())
+                opponent_model.load_state_dict(baseline_state_dict)
+                # hist_version = model_pool.get_history_model()
+                # hist_state_dict = model_pool.load_model(hist_version)
+                # if hist_state_dict is not None:
+                #     opponent_model.load_state_dict(hist_state_dict)
+                #     is_league_game = True
+                # else:   # failed to load historical model, fallback to self-play
+                #     opponent_model.load_state_dict(model.state_dict())
             else:   # self play
                 opponent_model.load_state_dict(model.state_dict())
             
