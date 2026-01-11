@@ -147,7 +147,7 @@ class ModelPoolClient:
             
         return None
     
-    def get_random_model(self):
+    def get_history_model(self):
         self._update_model_list()
         if self.n == 0:
             return None

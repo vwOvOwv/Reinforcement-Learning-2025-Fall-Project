@@ -64,7 +64,7 @@ class Actor(Process):
 
             is_league_game = False
             if np.random.rand() < self.history_sample_prob:
-                hist_version = model_pool.get_random_model()
+                hist_version = model_pool.get_history_model()
                 hist_state_dict = model_pool.load_model(hist_version)
                 if hist_state_dict is not None:
                     opponent_model.load_state_dict(hist_state_dict)
