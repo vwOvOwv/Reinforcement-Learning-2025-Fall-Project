@@ -7,6 +7,7 @@ Clone this repo:
 
 ```bash
 git clone git@github.com:vwOvOwv/Reinforcement-Learning-2025-Fall-Project.git
+cd Reinforcement-Learning-2025-Fall-Project
 ```
 
 Build dependencies:

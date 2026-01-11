@@ -6,7 +6,7 @@ global:
 
 actor:
     num_actors: 150
-    episodes_per_actor: 1000
+    episodes_per_actor: 10000
     history_sample_prob: 0.2
     reward_scaling: 10.0
     gamma: 0.99
