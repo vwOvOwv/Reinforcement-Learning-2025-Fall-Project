@@ -69,7 +69,7 @@ Then, preprocess the logs into `(observation, action)` pairs, which will be save
 python sl_pretrain/dataset/preprocess.py --load_path PATH_TO_EN_LOGS --save_path PATH_TO_PROCESSED_DATA
 ```
 
-We provide the processed data at [Processed Data Link](https://github.com/vwOvOwv/Reinforcement-Learning-2025-Fall-Project/releases/tag/v1.0).
+We provide the processed data [here](https://github.com/vwOvOwv/Reinforcement-Learning-2025-Fall-Project/releases/tag/v1.0).
 
 ### Pretraining
 
@@ -81,7 +81,7 @@ python sl_pretrain.py --config configs/sl_pretrain.yaml
 
 You may need to adjust the paths in the config file accordingly. It takes ~1.5 hours to train 1 epoch on a single NVIDIA RTX 4090 GPU.
 
-We also provide weights of the pretrained model (ResNet-34 backbone) at [Pretrained Model Link]().
+We also provide weights of the pretrained model (ResNet-34 backbone) [here]().
 
 ## PPO Training
 
