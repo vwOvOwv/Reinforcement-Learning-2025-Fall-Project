@@ -43,7 +43,7 @@ Then, preprocess the logs into `(observation, action)` pairs, which will be save
 python sl_pretrain/dataset/preprocess.py --load_path PATH_TO_EN_LOGS --save_path PATH_TO_PROCESSED_DATA
 ```
 
-We provide the processed data at [Processed Data Link]().
+We provide the processed data at [Processed Data Link](https://github.com/vwOvOwv/Reinforcement-Learning-2025-Fall-Project/releases/tag/v1.0).
 
 ### Pretraining
 
