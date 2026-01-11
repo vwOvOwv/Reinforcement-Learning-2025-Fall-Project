@@ -65,9 +65,10 @@ class Actor(Process):
                     model.load_state_dict(state_dict)
                     version = latest
 
-            is_league_game = False
+            play_with_baseline = False
             if np.random.rand() < self.history_sample_prob:
                 opponent_model.load_state_dict(baseline_state_dict)
+                play_with_baseline = True
                 # hist_version = model_pool.get_history_model()
                 # hist_state_dict = model_pool.load_model(hist_version)
                 # if hist_state_dict is not None:
@@ -79,7 +80,7 @@ class Actor(Process):
                 opponent_model.load_state_dict(model.state_dict())
             
             learner_names = []
-            if is_league_game:
+            if play_with_baseline:
                 learner_agent = env.agent_names[random.randint(0, len(env.agent_names) - 1)]
                 learner_names = [learner_agent]
             else:
@@ -200,7 +201,7 @@ class Actor(Process):
                 avg_reward = np.mean(episode_rewards)
                 avg_len = np.mean(episode_lens)
                 
-                if is_league_game:
+                if play_with_baseline:
                     metrics.update({
                         "league/reward": avg_reward,
                         "league/length": avg_len,

@@ -1,11 +1,11 @@
 global:
     replay_buffer_size: 50000
-    replay_buffer_episode: 2000
+    replay_buffer_episode: 1000
     output_dir: /home/data4T1/lpy/rl-proj/rl/log/
     pretrained_model_path: '/home/data4T1/lpy/rl-proj/pretrain/log/20260111-121013/best.pt'
 
 actor:
-    num_actors: 200
+    num_actors: 150
     episodes_per_actor: 1000
     history_sample_prob: 0.2
     reward_scaling: 10.0
@@ -28,4 +28,4 @@ learner:
     grad_clip: 1.0                     # gradient norm clipping
 
     ckpt_save_interval: 10000           # in training iterations
-    log_interval: 500                   # in training iterations
+    log_interval: 100                   # in training iterations
