@@ -95,14 +95,13 @@ You may need to adjust the paths in the config file accordingly.
 
 ## Submission
 
-To be consistent with botzone I/O format, revise the first line of `rl_ppo/agents/ppo_agent.py`
-before packing.
+To be consistent with botzone file organization, revise the first line of `rl_ppo/agents/ppo_agent.py` before packing.
 
 ```python
 from base_agent import MahjongGBAgent   # .base_agent => base_agent
 ```
 
-Then run the shell script.
+Then run the shell script to package the submission files. 
 
 ```bash
 ./pack.sh PATH_TO_MODEL_WEIGHTS
