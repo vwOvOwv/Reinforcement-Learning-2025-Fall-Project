@@ -39,9 +39,7 @@ class MahjongGBEnv():
             for i in range(1, 4):
                 self.all_tiles.append(suit + str(i))
     
-    def reset(self, prevalentWind = -1, tileWall = '', shanten_weight = 0., tenpai_weight = 0.):
-        self.shanten_weight = shanten_weight
-        self.tenpai_weight = tenpai_weight
+    def reset(self, prevalentWind = -1, tileWall = ''):
         # Create agents to process features
         self.agents = [self.agentclz(i) for i in range(4)]
         self.reward = None
@@ -162,10 +160,10 @@ class MahjongGBEnv():
         except Error as e:
             player = e.args[0]
             err_msg = str(e)
-            print(f"!!! CRITICAL WARNING !!! Player {player} Invalid Action.")
-            print(f"Error: {err_msg}")
-            print(f"Hand: {self.hands[player]}")
-            print(f"Pack: {self.packs[player]}")
+            print(f"Player {player} Invalid Action. Ignore.")
+            # print(f"Error: {err_msg}")
+            # print(f"Hand: {self.hands[player]}")
+            # print(f"Pack: {self.packs[player]}")
             self.obs = {i : self.agents[i].request2obs('Player %d Invalid' % player) for i in range(4)}
             # self.reward = [10] * 4
             # self.reward[player] = -30
@@ -178,53 +176,6 @@ class MahjongGBEnv():
         
     def _obs(self):
         return {self.agent_names[k] : v for k, v in self.obs.items()}
-
-    def win_possible(self, player):
-        hand = tuple(self.hands[player])
-        pack = tuple(self.packs[player])
-
-        max_fan = 0
-        
-        # print(hand, pack)
-        for tile in self.all_tiles:
-            temp_hand = hand + (tile,) # 注意这里用 tuple 操作
-            try:
-                if MahjongShanten(pack=pack, hand=temp_hand) != -1:
-                    continue 
-            except:
-                continue
-
-            try:
-                fans = MahjongFanCalculator(
-                    pack=pack,
-                    hand=hand,
-                    winTile=tile,
-                    flowerCount=0,
-                    isSelfDrawn=False,
-                    is4thTile=False,
-                    isAboutKong=False,
-                    isWallLast=False,
-                    seatWind=player,
-                    prevalentWind=self.prevalentWind,
-                    verbose=True
-                )
-                # print("called")
-                current_fan_sum = 0
-                for fanPoint, cnt, _, _ in fans:
-                    # print(fanPoint)
-                    current_fan_sum += fanPoint * cnt
-                
-                if current_fan_sum > max_fan:
-                    max_fan = current_fan_sum
-                    # print("current max fan:", max_fan)
-                    if max_fan >= 8.0:
-                        # print("win possible")
-                        return True
-            except:
-                # print("exception in win_possible check")
-                continue
-        
-        return False
 
     def _get_shanten(self, player):
         hand_list = list(self.hands[player])
@@ -256,31 +207,7 @@ class MahjongGBEnv():
                 rewards[self.agent_names[k]] += val
 
         for i in range(4):
-            current_shanten = self._get_shanten(i)
             agent_name = self.agent_names[i]
-            
-            if current_shanten < self.last_shanten[i]:
-                rewards[agent_name] += self.shanten_weight
-            elif current_shanten > self.last_shanten[i]:
-                rewards[agent_name] -= self.shanten_weight
-
-            is_tenpai = False
-            if current_shanten == 0 and len(self.hands[i]) % 3 == 1:
-                if self.win_possible(i):
-                    is_tenpai = True
-
-            if is_tenpai:
-                if not self.last_tenpai[i]:
-                    rewards[agent_name] += self.tenpai_weight
-                # else:
-                #     rewards[agent_name] += 0.0
-            # else:
-            #     if current_shanten == 0:
-            #         rewards[agent_name] -= 1.0
-                
-            self.last_shanten[i] = current_shanten
-            self.last_tenpai[i] = is_tenpai
-
             if self.reward_scaling:
                 rewards[agent_name] /= self.reward_scaling
 
@@ -371,7 +298,7 @@ class MahjongGBEnv():
                 self.agents[i].request2obs('Player %d Peng' % player)
         self.obs = {player : self.agents[player].request2obs('Player %d Peng' % player)}
     
-    def _chow(self, player, tile):  # 吃
+    def _chow(self, player, tile):
         self.hands[player].append(self.curTile)
         self.shownTiles[self.curTile] -= 1
         color = tile[0]
@@ -390,8 +317,8 @@ class MahjongGBEnv():
                 self.agents[i].request2obs('Player %d Chi %s' % (player, tile))
         self.obs = {player : self.agents[player].request2obs('Player %d Chi %s' % (player, tile))}
     
-    def _concealedKong(self, player, tile): # 暗杠
-        self.hands[player].append(self.curTile) # 这里 curTile 应当是玩家自己摸到的牌
+    def _concealedKong(self, player, tile):
+        self.hands[player].append(self.curTile)
         if self.hands[player].count(tile) < 4: raise Error(player)
         for i in range(4): self.hands[player].remove(tile)
         # offer: 0 for self, 123 for up/oppo/down
@@ -402,11 +329,11 @@ class MahjongGBEnv():
         self.isAboutKong = False
         for i in range(4):
             if i != player:
-                self.agents[i].request2obs('Player %d AnGang' % player) # 其他人不知道具体是哪张牌
+                self.agents[i].request2obs('Player %d AnGang' % player)
         self.agents[player].request2obs('Player %d AnGang %s' % (player, tile))
         self._draw(player)
     
-    def _promoteKong(self, player, tile):   # 补杠，碰了之后又摸到一张一样的
+    def _promoteKong(self, player, tile):
         self.hands[player].append(self.curTile)
         idx = -1
         for i in range(len(self.packs[player])):
@@ -417,7 +344,7 @@ class MahjongGBEnv():
         offer = self.packs[player][idx][2]
         self.packs[player][idx] = ('GANG', tile, offer)
         self.shownTiles[tile] = 4
-        self.state = 3  # 判定是否有人抢杠胡
+        self.state = 3
         self.curPlayer = player
         self.curTile = tile
         self.drawAboutKong = True
@@ -425,7 +352,7 @@ class MahjongGBEnv():
         self.agents[player].request2obs('Player %d BuGang %s' % (player, tile))
         self.obs = {i : self.agents[i].request2obs('Player %d BuGang %s' % (player, tile)) for i in range(4) if i != player}
     
-    def _checkMahjong(self, player, isSelfDrawn = False, isAboutKong = False):  # 胡牌检测
+    def _checkMahjong(self, player, isSelfDrawn = False, isAboutKong = False):
         try:
             fans = MahjongFanCalculator(
                 pack = tuple(self.packs[player]),
