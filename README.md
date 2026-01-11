@@ -53,7 +53,7 @@ We use ~380k human game logs from Botzone to train the backbone and policy head.
 
 [Botzone Log1 (EN)](https://disk.pku.edu.cn/anyshare/en-us/link/AA8CB7A57AFDCD48CAA7C749E04B5B6FAA?_tb=none&expires_at=2026-04-30T23%3A59%3A48%2B08%3A00&item_type=&password_required=false&title=data.zip&type=anonymous)
 
-[Botzone Log2 (CN) password: rm79](https://pan.baidu.com/s/1vXzYUsRBNpH245SQku0b3A#list/path=%2F)
+[Botzone Log2 (CN, password: rm79)](https://pan.baidu.com/s/1vXzYUsRBNpH245SQku0b3A#list/path=%2F)
 
 Then preprocess the raw data using scripts in `sl_pretrain/dataset`.
 
