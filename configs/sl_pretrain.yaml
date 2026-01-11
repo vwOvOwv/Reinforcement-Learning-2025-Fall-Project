@@ -1,10 +1,7 @@
 epochs: 10
-batch_size: 4096
+batch_size: 2048
 learning_rate: 0.0003
 weight_decay: 0.0001
-
-num_channels: 256
-num_blocks: 18
 
 data_path: [/home/data4T1/lpy/rl-proj/pretrain/human-data/data.npz,
             /home/data4T1/lpy/rl-proj/pretrain/human-data/output2017/output2017_0.npz,
@@ -13,6 +10,9 @@ data_path: [/home/data4T1/lpy/rl-proj/pretrain/human-data/data.npz,
             /home/data4T1/lpy/rl-proj/pretrain/human-data/output2017/output2017_3.npz,
             /home/data4T1/lpy/rl-proj/pretrain/human-data/output2017/output2017_4.npz,
             /home/data4T1/lpy/rl-proj/pretrain/human-data/output2017/output2017_5.npz,
-            /home/data4T1/lpy/rl-proj/pretrain/human-data/output2017/output2017_6.npz]
+            /home/data4T1/lpy/rl-proj/pretrain/human-data/output2017/output2017_6.npz,
+            /home/data4T1/lpy/rl-proj/pretrain/human-data/output2017/output2017_7.npz,
+            /home/data4T1/lpy/rl-proj/pretrain/human-data/output2017/output2017_8.npz,
+            /home/data4T1/lpy/rl-proj/pretrain/human-data/output2017/output2017_9.npz]
 output_dir: /home/data4T1/lpy/rl-proj/pretrain/log
 log_interval: 100
