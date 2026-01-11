@@ -7,21 +7,36 @@ from rl_ppo.utils.model_pool import ModelPoolServer
 from rl_ppo.models.network import CNNModel
 import wandb
 
+def toggle_grad(model, mode='warmup'):
+    if mode == 'warmup':
+        for param in model.parameters():
+            param.requires_grad = False
+        for param in model.value_conv.parameters():
+            param.requires_grad = True
+        for param in model.value_fc.parameters():
+            param.requires_grad = True
+            
+    elif mode == 'train':
+        for param in model.parameters():
+            param.requires_grad = True
+
 class Learner(Process):
     
-    def __init__(self, config, replay_buffer):
+    def __init__(self, config, replay_buffer, log_flag):
         super(Learner, self).__init__()
         self.replay_buffer = replay_buffer
         self.config = config
+        self.log_flag = log_flag
     
     def run(self):
         # initialize wandb for logging
-        # time.sleep(10)
-        wandb.init(project="RL-Project-MahjongGB-DPPO",
-                   name="DPPO-learner",
-                   group=self.config['run_id'],
-                   job_type="learner",
-                   config=self.config)
+        output_dir = self.config['output_dir'] + self.config['run_id']
+        if self.log_flag:
+            wandb.init(project="RL-2025-Fall-Project",
+                    name=self.config['run_id'],
+                    job_type="learner",
+                    config=self.config,
+                    dir=output_dir)
 
         # create model pool
         model_pool = ModelPoolServer(self.config['model_pool_size'], 
@@ -31,15 +46,23 @@ class Learner(Process):
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         device = torch.device(device=device)
         print(f"Using device: {device}")
+
+        # load pretrained model
         model = CNNModel()
+        state_dict = torch.load(self.config['pretrained_model_path'], 
+                                map_location='cpu',
+                                weights_only=True)
+        model.load_state_dict(state_dict)
+        print("Learner loading pretrained model from", self.config['pretrained_model_path'])
         
         # send to model pool
         # print("Pushing initial model to model pool...")
         model_pool.push(model.state_dict()) # push cpu-only tensor to model_pool
         model = model.to(device)
+        toggle_grad(model, mode='warmup')
         
         # training
-        optimizer = torch.optim.Adam(model.parameters(), lr = self.config['lr'])
+        optimizer = torch.optim.Adam(model.parameters(), lr = self.config['warmup_learning_rate'])
         
         iterations = 0
         full_batch_size = self.config['batch_size']
@@ -47,7 +70,7 @@ class Learner(Process):
         while True:
             # wait for samples
             while self.replay_buffer.size() < full_batch_size:
-                time.sleep(1e-6)
+                time.sleep(1e-3)
             # sample batch
             batch = self.replay_buffer.sample(full_batch_size)
             obs = torch.tensor(batch['state']['observation']).to(device)
@@ -99,8 +122,12 @@ class Learner(Process):
                     ))
                     value_loss = torch.mean(F.mse_loss(values, mini_batch_targets))
                     entropy_loss = -torch.mean(action_dist.entropy())
-                    loss = policy_loss + self.config['value_coeff'] * value_loss + \
+                    if iterations < self.config['warmup_iters']:
+                        loss = value_loss
+                    else:
+                        loss = policy_loss + self.config['value_coeff'] * value_loss + \
                            self.config['entropy_coeff'] * entropy_loss
+
                     optimizer.zero_grad()
                     loss.backward()
                     torch.nn.utils.clip_grad_norm_(model.parameters(), self.config['grad_clip'])
@@ -111,7 +138,7 @@ class Learner(Process):
                     entropy_loss_log.append(-entropy_loss.item())
 
                     # send to wandb
-                    if iterations % self.config['log_interval'] == 0:
+                    if self.log_flag and iterations % self.config['log_interval'] == 0:
                         wandb.log({
                             "Loss/Policy": np.mean(policy_loss_log),
                             "Loss/Value": np.mean(value_loss_log),
@@ -120,11 +147,16 @@ class Learner(Process):
                         }, step=iterations)
                     
                     # save checkpoints
-                    if iterations % self.config['ckpt_save_interval'] == 0:
-                        path = self.config['ckpt_save_path'] + f"{self.config['run_id']}-model-{iterations}.pt"
+                    if self.log_flag and iterations % self.config['ckpt_save_interval'] == 0:
+                        path = output_dir + f"/iteration-{iterations}.pt"
                         torch.save(model.state_dict(), path)
 
                     iterations += 1
+                    if iterations == self.config['warmup_iters']:
+                        toggle_grad(model, mode='train')
+                        for param_group in optimizer.param_groups:
+                            param_group['lr'] = self.config['learning_rate']
+                        print("Learner leaving warmup")
 
             # push new model
             model = model.to('cpu')
