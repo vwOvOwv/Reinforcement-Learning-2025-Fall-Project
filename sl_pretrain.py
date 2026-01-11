@@ -42,9 +42,8 @@ if __name__ == '__main__':
                         help='The path of config file', required=True)
     parser.add_argument('--seed', type=int, default=2025, 
                         help='Random seed (default: 2025)')
-    parser.add_argument('--log', type=int, default=1, choices=[0, 1],
-                        help='Log mode: 0 for off, 1 for loss&acc ' \
-                        'curve and checkpoints')
+    parser.add_argument('--log', type=int, default=1,
+                        help='Whether to log training process (default: 1)')
     try:
         args = parser.parse_args()
     except:
@@ -74,7 +73,7 @@ if __name__ == '__main__':
     # set dataset
     dataset = ConcatDataset([MahjongDataset(p) for p in config['data_path']])
     total_size = len(dataset)
-    train_size = int(0.9 * total_size)
+    train_size = int(0.99 * total_size)
     val_size = total_size - train_size
     train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
     print(f"Training sample: {train_size}")
