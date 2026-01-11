@@ -112,6 +112,9 @@ if __name__ == "__main__":
                             default='/home/data4T1/lpy/rl-proj/pretrain/human-data/output2017/merged.txt')
     arg_parser.add_argument('--save_path', type=str, help="Path to save processed data",
                             default='/home/data4T1/lpy/rl-proj/pretrain/human-data/output2017/output2017.npz')
+    arg_parser.add_argument('--start_match_idx', type=int, default=0, help="Skip first N matches")
+    arg_parser.add_argument('--start_part_idx', type=int, default=0, help="Start file suffix index")
+    
     args = arg_parser.parse_args()
     data_path = args.load_path
     if not os.path.exists(data_path):
@@ -129,10 +132,17 @@ if __name__ == "__main__":
     all_obs = []
     all_acts = []
     CHUNK_SIZE = 2000000
-    part_idx = 0        
+    part_idx = args.start_part_idx
+    start_idx = args.start_match_idx
     print(f"Total matches found: {len(raw_matches) - 1}")
+    if start_idx >= len(raw_matches):
+        print("Start index exceeds data length.")
+        sys.exit()
 
-    for match_idx, match_str in enumerate(tqdm.tqdm(raw_matches)):
+    matches_to_process = raw_matches[start_idx:]
+    print(f"Starting from index {start_idx}. Processing {len(matches_to_process)} matches.")
+
+    for match_idx, match_str in enumerate(tqdm.tqdm(matches_to_process)):
         if not match_str.strip():
             continue
 
