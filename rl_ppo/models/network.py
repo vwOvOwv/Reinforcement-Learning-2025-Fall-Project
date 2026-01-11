@@ -57,13 +57,15 @@ class BasicBlock(nn.Module):
         return out
 
 class CNNModel(nn.Module):
-    def __init__(self, num_channels=256, num_blocks=18):
+    def __init__(self, num_channels=256, num_blocks=34):
         nn.Module.__init__(self)
+        
         self.conv_in = nn.Sequential(
             layer_init(nn.Conv2d(45, num_channels, kernel_size=3, stride=1, padding=1, bias=False)),
             nn.GroupNorm(1, num_channels),
             nn.GELU()
         )
+
         blocks = []
         for _ in range(num_blocks):
             blocks.append(BasicBlock(num_channels, num_channels))
