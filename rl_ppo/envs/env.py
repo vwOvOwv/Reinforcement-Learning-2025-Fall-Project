@@ -159,15 +159,15 @@ class MahjongGBEnv():
                     self._draw(self.curPlayer)
         except Error as e:
             player = e.args[0]
-            err_msg = str(e)
-            print(f"Player {player} Invalid Action. Ignore.")
+            # err_msg = str(e)
+            print(f"Player {player} Invalid Action.")
             # print(f"Error: {err_msg}")
             # print(f"Hand: {self.hands[player]}")
             # print(f"Pack: {self.packs[player]}")
             self.obs = {i : self.agents[i].request2obs('Player %d Invalid' % player) for i in range(4)}
-            # self.reward = [10] * 4
-            # self.reward[player] = -30
-            self.reward = [0] * 4
+            base_penalty = 10
+            self.reward = [base_penalty] * 4
+            self.reward[player] = -base_penalty * 3
 
             # print(f"invalid action occurred in state {self.state}")
             # self.reward = [0] * 4
