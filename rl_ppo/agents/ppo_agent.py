@@ -70,9 +70,8 @@ class PPOAgent(MahjongGBAgent):
     ]
     OFFSET_TILE = {c : i for i, c in enumerate(TILE_LIST)}
     
-    def __init__(self, seatWind, min_fan=8):
+    def __init__(self, seatWind):
         self.seatWind = seatWind
-        self.min_fan = min_fan
         self.packs = [[] for i in range(4)] # 玩家吃碰杠的牌
         self.history = [[] for i in range(4)]   # 玩家的出牌历史
         self.tileWall = [21] * 4    # 摸牌结束后，每个人面前有21张牌在牌墙中
@@ -302,7 +301,7 @@ class PPOAgent(MahjongGBAgent):
     (An)Gang XX
     BuGang XX
     '''
-    def action2response(self, action):
+    def action2response(self, action):  # type: ignore
         if action < self.OFFSET_ACT['Hu']:
             return 'Pass'
         if action < self.OFFSET_ACT['Play']:
@@ -480,10 +479,7 @@ class PPOAgent(MahjongGBAgent):
             fanCnt = 0
             for fanPoint, cnt, fanName, fanNameEn in fans:
                 fanCnt += fanPoint * cnt
-            if fanCnt < self.min_fan: raise Exception('Not Enough Fans')
+            if fanCnt < 8.0: raise Exception('Not Enough Fans')
         except:
             return False
-        # print('Mahjong Achieved with fans:', fanCnt)
-        # print('hand:', self.hand)
-        # print('winTile:', winTile)
         return True
