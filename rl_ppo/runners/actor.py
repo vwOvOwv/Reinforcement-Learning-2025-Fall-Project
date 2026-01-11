@@ -7,23 +7,30 @@ from rl_ppo.envs.env import MahjongGBEnv
 from rl_ppo.agents.ppo_agent import PPOAgent
 from rl_ppo.models.network import CNNModel
 import random
+import wandb
 
 class Actor(Process):
     
-    def __init__(self, config, id, replay_buffer):
+    def __init__(self, config, id, replay_buffer, log_flag):
         super(Actor, self).__init__()
         self.replay_buffer = replay_buffer
         self.config = config
+        self.id = id
         self.name = f"Actor-{id}"
         self.history_sample_prob = config['history_sample_prob']
-        self.have_shanten_reward = (config['shenten_reward'] is not None)
-        if self.have_shanten_reward:
-            self.init_shanten_reward = config['shenten_reward']['init']
-            self.shanten_decay_episodes = config['shenten_reward']['decay_episode']
-        self.tenpai_reward = config['tenpai_reward']
+        self.log_flag = log_flag 
         
     def run(self):
         torch.set_num_threads(1)
+
+        if self.log_flag and self.id == 0:
+            output_dir = self.config['output_dir'] + self.config['run_id']
+            wandb.init(project="RL-2025-Fall-Project",
+                    name=self.config['run_id'],
+                    job_type="actor",
+                    config=self.config,
+                    dir=output_dir,
+                    reinit=True)
     
         # connect to model pool
         model_pool = ModelPoolClient(f"model-pool-{self.config['run_id']}")
@@ -45,6 +52,8 @@ class Actor(Process):
         
         total_episodes = self.config['episodes_per_actor']
         for episode in range(total_episodes):
+            if self.id == 0:
+                print(f"Actor-0 starting episode {episode + 1}/{total_episodes}")
             # update model
             latest = model_pool.get_latest_model()
             if latest['id'] > version['id']:    # type: ignore
@@ -60,9 +69,9 @@ class Actor(Process):
                 if hist_state_dict is not None:
                     opponent_model.load_state_dict(hist_state_dict)
                     is_league_game = True
-                else:
+                else:   # failed to load historical model, fallback to self-play
                     opponent_model.load_state_dict(model.state_dict())
-            else:
+            else:   # self play
                 opponent_model.load_state_dict(model.state_dict())
             
             learner_names = []
@@ -73,9 +82,7 @@ class Actor(Process):
                 learner_names = env.agent_names
 
             # run one episode and collect data
-            shanten_weight = self.init_shanten_reward * \
-                (1 - episode / self.shanten_decay_episodes) if self.have_shanten_reward else 0.0
-            obs = env.reset(shanten_weight=shanten_weight, tenpai_weight=self.tenpai_reward)
+            obs = env.reset()
             episode_data = {agent_name: {
                 'state' : {
                     'observation': [],
@@ -131,6 +138,10 @@ class Actor(Process):
                     episode_data[agent_name]['reward'].append(rewards[agent_name])
                 obs = next_obs
 
+            episode_rewards = []
+            episode_lens = []
+            episode_values = []
+
             for agent_name, agent_data in episode_data.items():
                 obs = np.stack(agent_data['state']['observation'])  # (num_steps, obs_dim)
                 mask = np.stack(agent_data['state']['action_mask']) # (num_steps, action_dim)
@@ -162,3 +173,19 @@ class Actor(Process):
                     'raw_adv': advantages,
                     'target': returns
                 })
+
+                if agent_name in learner_names:
+                    total_episode_reward = np.sum(rewards) * self.config['reward_scaling']
+                    episode_rewards.append(total_episode_reward)
+                    episode_lens.append(len(actions))
+                    episode_values.append(np.mean(values))
+
+            if self.log_flag and self.id == 0 and len(episode_rewards) > 0:
+                metrics = {
+                    "actor/episode_reward": np.mean(episode_rewards),
+                    "actor/episode_length": np.mean(episode_lens),
+                    "actor/episode_value_estimate": np.mean(episode_values),
+                    "actor/model_version": version['id'],   # type: ignore
+                    "actor/is_league_game": int(is_league_game),
+                }
+                wandb.log(metrics)
