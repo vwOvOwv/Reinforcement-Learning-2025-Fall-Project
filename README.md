@@ -110,7 +110,7 @@ Then run `pack.sh` to pack submission files.
 ```
 
 Download the output file `handin.zip` from server and decompress it locally. It should
-be orgainized like this:
+be organized like this:
 
 ```
 handin/
