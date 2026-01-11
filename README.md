@@ -17,7 +17,7 @@ conda activate mahjong-rl
 pip install -r requirements.txt
 ```
 
-Note that you may need to manually install [MahjongGB](https://github.com/ailab-pku/PyMahjongGB).
+You may need to manually install [MahjongGB](https://github.com/ailab-pku/PyMahjongGB).
 
 ```bash
 pip install git+https://github.com/ailab-pku/PyMahjongGB.git
@@ -49,13 +49,13 @@ pip install git+https://github.com/ailab-pku/PyMahjongGB.git
 
 ### Data Preparation
 
-We use ~380k human game logs from Botzone to train the backbone and policy head. The logs can be downloaded from:
+We use ~380k human game logs from Botzone to train the backbone and policy head. The logs can be downloaded from links below.
 
 [Botzone Log1 (EN)](https://disk.pku.edu.cn/anyshare/en-us/link/AA8CB7A57AFDCD48CAA7C749E04B5B6FAA?_tb=none&expires_at=2026-04-30T23%3A59%3A48%2B08%3A00&item_type=&password_required=false&title=data.zip&type=anonymous)
 
 [Botzone Log2 (CN) password: rm79](https://pan.baidu.com/s/1vXzYUsRBNpH245SQku0b3A#list/path=%2F)
 
-Then preprocess the raw data using the provided scripts in the `sl_pretrain/dataset`.
+Then preprocess the raw data using scripts in `sl_pretrain/dataset`.
 
 First, convert CN logs to EN logs:
 
@@ -73,13 +73,13 @@ We provide the processed data [here](https://github.com/vwOvOwv/Reinforcement-Le
 
 ### Pretraining
 
-To train the supervised learning model, run:
+To train the supervised learning model, run
 
 ```bash
 python sl_pretrain.py --config configs/sl_pretrain.yaml
 ```
 
-You may need to adjust the paths in the config file accordingly. It takes ~1.5 hours to train 1 epoch on a single NVIDIA RTX 4090 GPU.
+You may need to adjust the config file accordingly. It takes ~1.5 hours to train 1 epoch on a single NVIDIA RTX 4090 GPU.
 
 We also provide weights of the pretrained model [here]() (ResNet-34 backbone and policy head).
 
@@ -91,7 +91,7 @@ After pretraining, fine-tune the model using distributed PPO.
 python rl_train.py --config configs/rl_train.yaml
 ```
 
-You may need to adjust the paths in the config file accordingly.
+You may need to adjust the config file accordingly.
 
 Model Weights after PPO fine-tuning are provided [here]().
 
@@ -103,14 +103,14 @@ To be consistent with botzone file organization, revise the first line of `rl_pp
 from base_agent import MahjongGBAgent   # .base_agent => base_agent
 ```
 
-Then run the shell script to package the submission files. 
+Then run `pack.sh` to pack submission files. 
 
 ```bash
 ./pack.sh PATH_TO_MODEL_WEIGHTS
 ```
 
-Download the output file `handin.zip` from server and decompress it locally. Its
-orgainization should be:
+Download the output file `handin.zip` from server and decompress it locally. It should
+be orgainized like this:
 
 ```
 handin/
