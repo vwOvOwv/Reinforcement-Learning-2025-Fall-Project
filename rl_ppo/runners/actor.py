@@ -134,8 +134,14 @@ class Actor(Process):
                 # interact with env
                 agent_actions = {agent_name : episode_data[agent_name]['action'][-1] for agent_name in obs}
                 next_obs, rewards, done = env.step(agent_actions)
-                for agent_name in obs:
-                    episode_data[agent_name]['reward'].append(rewards[agent_name])
+                # for agent_name in obs:
+                #     episode_data[agent_name]['reward'].append(rewards[agent_name])
+                for agent_name, r in rewards.items():
+                    if agent_name in obs:
+                        episode_data[agent_name]['reward'].append(r)
+                    else:
+                        if len(episode_data[agent_name]['reward']) > 0:
+                            episode_data[agent_name]['reward'][-1] += r
                 obs = next_obs
 
             episode_rewards = []
@@ -143,6 +149,8 @@ class Actor(Process):
             episode_values = []
 
             for agent_name, agent_data in episode_data.items():
+                if agent_name not in learner_names:
+                    continue
                 obs = np.stack(agent_data['state']['observation'])  # (num_steps, obs_dim)
                 mask = np.stack(agent_data['state']['action_mask']) # (num_steps, action_dim)
                 actions = np.array(agent_data['action'], dtype = np.int64)
@@ -174,18 +182,29 @@ class Actor(Process):
                     'target': returns
                 })
 
-                if agent_name in learner_names:
-                    total_episode_reward = np.sum(rewards) * self.config['reward_scaling']
-                    episode_rewards.append(total_episode_reward)
-                    episode_lens.append(len(actions))
-                    episode_values.append(np.mean(values))
+                total_episode_reward = np.sum(rewards) * self.config['reward_scaling']
+                episode_rewards.append(total_episode_reward)
+                episode_lens.append(len(actions))
+                episode_values.append(np.mean(values))
 
             if self.log_flag and self.id == 0 and len(episode_rewards) > 0:
                 metrics = {
-                    "actor/episode_reward": np.mean(episode_rewards),
-                    "actor/episode_length": np.mean(episode_lens),
                     "actor/episode_value_estimate": np.mean(episode_values),
                     "actor/model_version": version['id'],   # type: ignore
-                    "actor/is_league_game": int(is_league_game),
                 }
+                
+                avg_reward = np.mean(episode_rewards)
+                avg_len = np.mean(episode_lens)
+                
+                if is_league_game:
+                    metrics.update({
+                        "league/reward": avg_reward,
+                        "league/length": avg_len,
+                    })
+                else:
+                    metrics.update({
+                        "self_play/reward": avg_reward,
+                        "self_play/length": avg_len,
+                    })
+
                 wandb.log(metrics)
