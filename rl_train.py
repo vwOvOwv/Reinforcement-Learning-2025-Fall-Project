@@ -26,7 +26,9 @@ if __name__ == '__main__':
                         help='Path of config file', required=True)
     parser.add_argument('--seed', type=int, default=2025, 
                         help='Random seed (default: 2025)')
-    run_id = time.strftime("%Y%m%d_%H%M%S")
+    parser.add_argument('--log', type=int, default=1,
+                        help='Whether to log training process (default: 1)')
+    run_id = time.strftime("%Y%m%d-%H%M%S")
 
     try:
         args = parser.parse_args()
@@ -41,8 +43,12 @@ if __name__ == '__main__':
         config = yaml.safe_load(file)
     
     config['global']['run_id'] = run_id
-    config['learner']['run_id'] = run_id
     config['actor']['run_id'] = run_id
+    config['actor']['pretrained_model_path'] = config['global']['pretrained_model_path']
+    config['actor']['output_dir'] = config['global']['output_dir']
+    config['learner']['run_id'] = run_id
+    config['learner']['pretrained_model_path'] = config['global']['pretrained_model_path']
+    config['learner']['output_dir'] = config['global']['output_dir']
 
     replay_buffer = ReplayBuffer(config['global']['replay_buffer_size'], 
                                  config['global']['replay_buffer_episode'])
@@ -50,10 +56,10 @@ if __name__ == '__main__':
     # create actors and learner, each actor runs in its own process
     actors = []
     for i in range(config['actor']['num_actors']):
-        actor = Actor(config['actor'], i, replay_buffer)
+        actor = Actor(config['actor'], i, replay_buffer, args.log)
         actors.append(actor)
 
-    learner = Learner(config['learner'], replay_buffer)
+    learner = Learner(config['learner'], replay_buffer, args.log)
     
     for actor in actors: 
         actor.start()
