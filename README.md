@@ -1,6 +1,6 @@
-# RL Project: Chinese Standard Mahjong
+# Mahjong Bot with Supervised Pretraining and Distributed PPO
 
-This repo contains implementation of Supervised pretraining and distributed PPO applied to Chinese Standard Mahjong.
+This repo contains implementation of supervised pretraining and distributed PPO applied to Chinese Standard Mahjong.
 
 ## Environment Setup
 Clone this repo:
@@ -67,7 +67,7 @@ python rl_train.py --config configs/rl_train.yaml
 
 You may need to adjust the paths in the config file accordingly.
 
-## Handin
+## Submission
 
 To be consistent with botzone I/O format, revise the first line of `rl_ppo/agents/ppo_agent.py`
 before packing.
@@ -81,3 +81,14 @@ Then run the shell script.
 ```bash
 ./pack.sh PATH_TO_MODEL_WEIGHTS
 ```
+
+Download the output file `handin.zip` from server and decompress it locally. Its
+orgainization should be like:
+
+```
+handin/
+  ├── codes.zip
+  └── testrl.pt
+```
+
+Finally, submit `codes.zip` and `testrl.pt` to Botzone to test your bot :)
