@@ -23,6 +23,7 @@ learner:
 
     value_coeff: 0.1
     entropy_coeff: 0.001
+    kl_coeff: 0.2
     clip: 0.2                           # PPO gradient clipping
     dppo_clip: 3.0                      # DPPO gradient clipping
     grad_clip: 1.0                     # gradient norm clipping

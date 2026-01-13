@@ -48,10 +48,14 @@ class Learner(Process):
         print(f"Using device: {device}")
 
         # load pretrained model
-        model = CNNModel()
         state_dict = torch.load(self.config['pretrained_model_path'], 
                                 map_location='cpu',
                                 weights_only=True)
+        ref_model = CNNModel()
+        ref_model.load_state_dict(state_dict)
+        ref_model = ref_model.to(device)
+        ref_model.eval()
+        model = CNNModel()
         model.load_state_dict(state_dict)
         print("Learner loading pretrained model from", self.config['pretrained_model_path'])
         
@@ -87,6 +91,7 @@ class Learner(Process):
             policy_loss_log = []
             value_loss_log = []
             entropy_loss_log = []
+            kl_loss_log = []
 
             # calculate PPO loss
             model.train()    
@@ -105,7 +110,9 @@ class Learner(Process):
                     mini_batch_advs = advs[mini_batch_indices]
                     mini_batch_targets = targets[mini_batch_indices]
                     mini_batch_old_log_probs = old_log_probs[mini_batch_indices]
-
+                    with torch.no_grad():
+                        ref_logits, _ = ref_model(mini_batch_states)
+                        ref_dist = torch.distributions.Categorical(logits=ref_logits)
                     logits, values = model(mini_batch_states)
                     action_dist = torch.distributions.Categorical(logits = logits)
                     log_probs = action_dist.log_prob(mini_batch_actions.squeeze(-1)).unsqueeze(-1)
@@ -122,11 +129,12 @@ class Learner(Process):
                     ))
                     value_loss = torch.mean(F.mse_loss(values, mini_batch_targets))
                     entropy_loss = -torch.mean(action_dist.entropy())
+                    kl_loss = torch.distributions.kl.kl_divergence(action_dist, ref_dist).mean()
                     if iterations < self.config['warmup_iters']:
                         loss = value_loss
                     else:
                         loss = policy_loss + self.config['value_coeff'] * value_loss + \
-                           self.config['entropy_coeff'] * entropy_loss
+                           self.config['entropy_coeff'] * entropy_loss + self.config['kl_coeff'] * kl_loss
 
                     optimizer.zero_grad()
                     loss.backward()
@@ -136,6 +144,7 @@ class Learner(Process):
                     policy_loss_log.append(policy_loss.item())
                     value_loss_log.append(value_loss.item())
                     entropy_loss_log.append(-entropy_loss.item())
+                    kl_loss_log.append(kl_loss.item())
 
                     # send to wandb
                     if self.log_flag and iterations % self.config['log_interval'] == 0:
@@ -143,6 +152,7 @@ class Learner(Process):
                             "Loss/Policy": np.mean(policy_loss_log),
                             "Loss/Value": np.mean(value_loss_log),
                             "Loss/Entropy": np.mean(entropy_loss_log),
+                            "Loss/KL": np.mean(kl_loss_log),
                             "Train/LearningRate": optimizer.param_groups[0]['lr'],
                         }, step=iterations)
                     
