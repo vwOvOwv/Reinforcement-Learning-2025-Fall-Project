@@ -370,7 +370,7 @@ class PPOAgent(MahjongGBAgent):
             return min_s
         
     def _hand_embedding_update(self):
-        self.obs[self.OFFSET_OBS['HAND']: self.OFFSET_OBS['PACKS']] = 0  # 清空手牌
+        self.obs[self.OFFSET_OBS['HAND']: self.OFFSET_OBS['PACKS']] = 0 
         d = defaultdict(int)
         for tile in self.hand:
             d[tile] += 1

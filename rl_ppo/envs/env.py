@@ -162,9 +162,9 @@ class MahjongGBEnv():
             # err_msg = str(e)
             print(f"Player {player} Invalid Action.")
             # print(f"Error: {err_msg}")
-            # print(f"Hand: {self.hands[player]}")
-            # print(f"Pack: {self.packs[player]}")
-            self.obs = {i : self.agents[i].request2obs('Player %d Invalid' % player) for i in range(4)}
+            print(f"Hand: {self.hands[player]}")
+            print(f"Pack: {self.packs[player]}")
+            print(f"Current tile: {self.curTile}")
             base_penalty = 10
             self.reward = [base_penalty] * 4
             self.reward[player] = -base_penalty * 3
