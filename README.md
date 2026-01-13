@@ -82,7 +82,7 @@ python sl_pretrain.py --config configs/sl_pretrain.yaml
 
 You may need to adjust the config file accordingly. It takes ~1.5 hours to train 1 epoch on a single NVIDIA RTX 4090 GPU.
 
-We also provide weights of the pretrained model [here]() (ResNet-34 backbone and policy head).
+We also provide weights of the pretrained model [here](https://github.com/vwOvOwv/Reinforcement-Learning-2025-Fall-Project/releases/tag/v1.1) (ResNet-34 backbone and policy head).
 
 ## PPO Training
 
