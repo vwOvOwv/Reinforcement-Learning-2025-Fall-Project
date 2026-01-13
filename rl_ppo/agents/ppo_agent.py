@@ -265,6 +265,7 @@ class PPOAgent(MahjongGBAgent):
                 self.isAboutKong = True
                 for i in range(4):
                     self.hand.remove(tile)
+                self.shownTiles[tile] = 4
             else:
                 self.isAboutKong = False
             return
@@ -461,6 +462,10 @@ class PPOAgent(MahjongGBAgent):
                 self.obs[base_rec][self.OFFSET_TILE[tile]] = 1
     
     def _check_mahjong(self, winTile, isSelfDrawn = False, isAboutKong = False):
+        if isSelfDrawn:
+            wall_last = (self.tileWall[0] == 0)
+        else:
+            wall_last = self.wallLast
         try:
             fans = MahjongFanCalculator(
                 pack = tuple(self.packs[0]),
@@ -470,7 +475,7 @@ class PPOAgent(MahjongGBAgent):
                 isSelfDrawn = isSelfDrawn,
                 is4thTile = (self.shownTiles[winTile] + isSelfDrawn) == 4,
                 isAboutKong = isAboutKong,
-                isWallLast = self.wallLast,
+                isWallLast = wall_last,
                 seatWind = self.seatWind,
                 prevalentWind = self.prevalentWind,
                 verbose = True

@@ -97,8 +97,8 @@ class MahjongGBEnv():
                 # After Draw, prepare to Hu/Play/Gang/BuGang
                 response = self.agents[self.curPlayer].action2response(action_dict[self.agent_names[self.curPlayer]]).split()
                 if response[0] == 'Hu':
+                    self._check_mahjong(self.curPlayer, isSelfDrawn = True, isAboutKong = self.isAboutKong)
                     self.shownTiles[self.curTile] += 1
-                    self._checkMahjong(self.curPlayer, isSelfDrawn = True, isAboutKong = self.isAboutKong)
                 elif response[0] == 'Play':
                     self.hands[self.curPlayer].append(self.curTile)
                     self._discard(self.curPlayer, response[1])
@@ -116,7 +116,7 @@ class MahjongGBEnv():
                 for j in range(1, 4):
                     i = (self.curPlayer + j) % 4
                     if t[i][0] == 'Hu':
-                        self._checkMahjong(i)
+                        self._check_mahjong(i)
                         break
                 else:
                     for j in range(1, 4):
@@ -150,7 +150,7 @@ class MahjongGBEnv():
                 for j in range(1, 4):
                     i = (self.curPlayer + j) % 4
                     if responses[i] == 'Hu':
-                        self._checkMahjong(i, isAboutKong = True)
+                        self._check_mahjong(i, isAboutKong = True)
                         break
                 else:
                     for j in range(1, 4):
@@ -161,16 +161,13 @@ class MahjongGBEnv():
             player = e.args[0]
             # err_msg = str(e)
             print(f"Player {player} Invalid Action.")
-            # print(f"Error: {err_msg}")
+            print(f"State: {self.state}")
             print(f"Hand: {self.hands[player]}")
             print(f"Pack: {self.packs[player]}")
             print(f"Current tile: {self.curTile}")
             base_penalty = 10
             self.reward = [base_penalty] * 4
             self.reward[player] = -base_penalty * 3
-
-            # print(f"invalid action occurred in state {self.state}")
-            # self.reward = [0] * 4
             self.done = True
         return self._obs(), self._reward(), self._done()
         
@@ -226,10 +223,9 @@ class MahjongGBEnv():
             return bool(self.tileWall[player])
         return bool(self.tileWall)
     
-    def _deal(self):    # 发牌
-        self.hands = [] # 手牌
-        self.packs = [] # 吃碰杠的牌
-        # 抓牌
+    def _deal(self):
+        self.hands = []
+        self.packs = []
         for i in range(4):
             hand = []
             while len(hand) < 13:
@@ -237,30 +233,26 @@ class MahjongGBEnv():
                 hand.append(tile)
             self.hands.append(hand)
             self.packs.append([])
-            # 通知 Agent 它拿到了什么牌
-            # 格式如: 'Deal W1 W2 B3 ...'
-            # Agent 会据此更新自己的特征向量（私有信息）
             self.agents[i].request2obs(' '.join(['Deal', *hand]))
 
-        self.curPlayer = 0  # 设定庄家（0号位）为当前玩家
-        self.drawAboutKong = False  # 杠上开花
-        self._draw(self.curPlayer)  # 庄家起手摸第 14 张牌
+        self.curPlayer = 0
+        self.drawAboutKong = False
+        self._draw(self.curPlayer)
     
-    def _draw(self, player):    # 摸牌
+    def _draw(self, player):
         tile = self._drawTile(player)
-        self.myWallLast = not self._canDrawTile(player) # 检查player是否还能摸下一张（用于复式麻将逻辑）
-        self.wallLast = not self._canDrawTile((player + 1) % 4) # 检查下家是否还有牌摸。如果为 True，说明这是全场最后一张牌（海底牌）
-                                                                # 这会影响后续能否吃碰杠的判定（海底牌不能吃碰杠）
-        self.isAboutKong = self.drawAboutKong   # 这张牌是否是杠后摸的
-        self.drawAboutKong = False  # 下一次摸牌是否属于杠后补牌，在动作 A（杠）的函数里被设置为 True
-        self.state = 1  # State 1 代表“摸牌后等待决策”状态（可 胡/杠/打牌）
+        self.myWallLast = not self._canDrawTile(player)
+        self.wallLast = not self._canDrawTile((player + 1) % 4)
+        self.isAboutKong = self.drawAboutKong
+        self.drawAboutKong = False
+        self.state = 1
         self.curTile = tile
         for i in range(4):
             if i != player:
                 self.agents[i].request2obs('Player %d Draw' % player)
         self.obs = {player : self.agents[player].request2obs('Draw %s' % tile)}
     
-    def _discard(self, player, tile):   # 出牌
+    def _discard(self, player, tile):   
         if tile not in self.hands[player]: raise Error(player)
         self.hands[player].remove(tile)
         self.shownTiles[tile] += 1
@@ -270,8 +262,8 @@ class MahjongGBEnv():
         self.agents[player].request2obs('Player %d Play %s' % (player, tile))
         self.obs = {i : self.agents[i].request2obs('Player %d Play %s' % (player, tile)) for i in range(4) if i != player}
     
-    def _kong(self, player, tile):  # 明杠
-        self.hands[player].append(self.curTile) # 拿牌
+    def _kong(self, player, tile):  
+        self.hands[player].append(self.curTile) 
         if self.hands[player].count(tile) < 4: raise Error(player)
         for i in range(4): self.hands[player].remove(tile)
         # offer: 0 for self, 123 for up/oppo/down
@@ -284,8 +276,8 @@ class MahjongGBEnv():
             agent.request2obs('Player %d Gang' % player)
         self._draw(player)
     
-    def _pung(self, player, tile):  # 碰
-        self.hands[player].append(self.curTile) # 拿牌
+    def _pung(self, player, tile):
+        self.hands[player].append(self.curTile)
         if self.hands[player].count(tile) < 3: raise Error(player)
         for i in range(3): self.hands[player].remove(tile)
         # offer: 0 for self, 123 for up/oppo/down
@@ -305,7 +297,8 @@ class MahjongGBEnv():
         num = int(tile[1])
         for i in range(-1, 2):
             t = color + str(num + i)
-            if t not in self.hands[player]: raise Error(player)
+            if t not in self.hands[player]:
+                raise Error(player)
             self.hands[player].remove(t)
             self.shownTiles[t] += 1
         # offer: 123 for which tile is offered
@@ -352,7 +345,8 @@ class MahjongGBEnv():
         self.agents[player].request2obs('Player %d BuGang %s' % (player, tile))
         self.obs = {i : self.agents[i].request2obs('Player %d BuGang %s' % (player, tile)) for i in range(4) if i != player}
     
-    def _checkMahjong(self, player, isSelfDrawn = False, isAboutKong = False):
+    def _check_mahjong(self, player, isSelfDrawn = False, isAboutKong = False):
+        wall_last = self.myWallLast if isSelfDrawn else self.wallLast
         try:
             fans = MahjongFanCalculator(
                 pack = tuple(self.packs[player]),
@@ -362,7 +356,7 @@ class MahjongGBEnv():
                 isSelfDrawn = isSelfDrawn,
                 is4thTile = (self.shownTiles[self.curTile] + isSelfDrawn) == 4,
                 isAboutKong = isAboutKong,
-                isWallLast = self.wallLast,
+                isWallLast = wall_last,
                 seatWind = player,
                 prevalentWind = self.prevalentWind,
                 verbose = True
@@ -387,4 +381,6 @@ class MahjongGBEnv():
 
             self.done = True
         except Exception as e:
+            print(f"SelfDrawn: {isSelfDrawn}, AboutKong: {isAboutKong}, WallLast: {wall_last}")
+            print(f"Fan: {fanCnt}")
             raise Error(player)
